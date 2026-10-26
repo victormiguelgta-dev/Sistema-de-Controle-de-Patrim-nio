@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Arquitetura do Patrimônio</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Public+Sans:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: documento técnico de coluna única; diagramas largos em quadros roláveis; perguntas como fichas numeradas */
+:root{
+  --bg:#f5f7f8; --surface:#ffffff; --fg:#17212b; --muted:#5a6876; --line:#d8dfe5;
+  --accent:#0f5e75; --accent-soft:#e1eef2; --tag:#f3c74a; --tag-fg:#2b2200;
+  --ok:#2f7d4f; --warn:#a86a00; --bad:#b23a3a;
+  --f-display:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --f-body:"Public Sans","Segoe UI",Arial,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#10161c; --surface:#18212a; --fg:#e4eaef; --muted:#9aa8b5; --line:#2b3742;
+  --accent:#5fb4cc; --accent-soft:#18323b; --tag:#e8bd43; --tag-fg:#241c00;
+  --ok:#6cc08d; --warn:#e0a640; --bad:#e57b7b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10161c; --surface:#18212a; --fg:#e4eaef; --muted:#9aa8b5; --line:#2b3742;
+  --accent:#5fb4cc; --accent-soft:#18323b; --tag:#e8bd43; --tag-fg:#241c00;
+  --ok:#6cc08d; --warn:#e0a640; --bad:#e57b7b; color-scheme:dark}
+
+body{background:var(--bg);color:var(--fg);font:16px/1.6 var(--f-body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:40px 80px}
+.wrap{max-width:1040px;margin:0 auto;display:grid;gap:56px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(2rem,5vw,3rem);font-weight:800;letter-spacing:-.01em}
+h2{font-size:1.6rem;font-weight:700}
+h3{font-size:1.1rem;font-weight:700}
+p{margin:0;max-width:68ch}
+code,.mono{font-family:var(--f-mono);font-size:.86em}
+.eyebrow{font:600 .75rem/1 var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+section{display:grid;gap:20px}
+.lede{color:var(--muted);font-size:1.08rem}
+
+/* cabeçalho com etiqueta de patrimônio */
+header{display:grid;gap:18px}
+.tag{display:inline-flex;align-items:stretch;border:2px solid var(--fg);border-radius:4px;width:max-content;max-width:100%;font-family:var(--f-mono);font-size:.8rem;overflow:hidden}
+.tag span{padding:4px 10px}
+.tag span:first-child{background:var(--tag);color:var(--tag-fg);font-weight:600}
+.stack{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:600 .78rem/1 var(--f-mono);padding:7px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}
+
+/* quadros de diagrama */
+.figure{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:20px;overflow-x:auto}
+.figure pre.mermaid{margin:0;min-width:640px;background:transparent}
+.cap{font-size:.86rem;color:var(--muted)}
+
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.grid2>*{min-width:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:18px 20px;display:grid;gap:10px;align-content:start}
+.card ul{margin:0;padding-left:1.1em;display:grid;gap:4px}
+.card li{color:var(--fg)}
+.card .muted{color:var(--muted);font-size:.92rem}
+
+/* exemplo de extração */
+.extract{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:stretch}
+.extract>*{min-width:0}
+.extract pre{margin:0;padding:16px;border-radius:8px;background:var(--surface);border:1px solid var(--line);font:13px/1.55 var(--f-mono);white-space:pre-wrap;overflow-wrap:anywhere}
+.arrow{align-self:center;font:700 1.4rem var(--f-display);color:var(--accent)}
+@media (max-width:700px){.extract{grid-template-columns:1fr}.arrow{transform:rotate(90deg);justify-self:center}}
+
+/* dicionário de tabelas */
+.tables{display:grid;gap:14px}
+details{background:var(--surface);border:1px solid var(--line);border-radius:8px}
+summary{cursor:pointer;padding:14px 18px;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"+";font:700 1rem var(--f-mono);color:var(--accent);width:1ch}
+details[open] summary::before{content:"–"}
+summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
+summary b{font-family:var(--f-mono);font-size:.95rem}
+summary .why{color:var(--muted);font-size:.9rem}
+.tscroll{overflow-x:auto;padding:0 18px 16px}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:.88rem}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .72rem/1.2 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+td:first-child{font-family:var(--f-mono);white-space:nowrap}
+td:nth-child(2){font-family:var(--f-mono);color:var(--muted);white-space:nowrap}
+.k{font:600 .68rem/1 var(--f-mono);padding:3px 6px;border-radius:4px;margin-left:6px;background:var(--accent-soft);color:var(--accent)}
+
+/* status */
+.status{display:flex;flex-wrap:wrap;gap:8px}
+.st{display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--line);border-radius:6px;background:var(--surface);font-size:.9rem}
+.dot{width:10px;height:10px;border-radius:50%;background:currentColor}
+.st.ok{color:var(--ok)} .st.warn{color:var(--warn)} .st.bad{color:var(--bad)} .st.mut{color:var(--muted)} .st.acc{color:var(--accent)}
+.st b{color:var(--fg);font-weight:600}
+
+/* perguntas */
+.qs{display:grid;gap:12px;counter-reset:q}
+.q{display:grid;grid-template-columns:auto 1fr;gap:4px 16px;padding:16px 18px;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+.q::before{counter-increment:q;content:counter(q,decimal-leading-zero);grid-row:span 2;font:700 1.1rem/1.4 var(--f-mono);color:var(--tag-fg);background:var(--tag);border-radius:4px;padding:2px 8px;height:max-content}
+.q p:first-child{font-weight:600}
+.q p+p{color:var(--muted);font-size:.93rem}
+.q p+p b{color:var(--fg)}
+.q.done{background:transparent;border-style:dashed}
+.q.done::before{content:"✓";counter-increment:q;background:var(--accent-soft);color:var(--accent)}
+.group{font:600 .78rem/1 var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:8px}
+</style>
+<script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs";mermaid.initialize({startOnLoad:true,theme:matchMedia("(prefers-color-scheme: dark)").matches?"dark":"default"});</script>
+</head>
+<body>
+
+
+<div class="wrap">
+
+<header>
+  <div class="tag"><span>PAT</span><span>v0.3 · arquitetura fechada para a v1</span></div>
+  <h1>Sistema de Controle de Patrimônio</h1>
+  <p class="lede">Painel para cadastrar, buscar e acompanhar equipamentos (impressoras, telefones, computadores…) com categorias de campos configuráveis, posse por pessoa e local, histórico de movimentação, arquivamento de itens quebrados e importação de planilhas e textos soltos com uma IA que transforma cada trecho num objeto organizado.</p>
+  <div class="stack">
+    <span class="chip">React + Vite</span><span class="chip">Python · FastAPI</span><span class="chip">SQLAlchemy + Alembic</span><span class="chip">SQLite</span><span class="chip">pandas / openpyxl</span><span class="chip">Gemini API (gratuito)</span><span class="chip">Roda local · sem login</span>
+  </div>
+</header>
+
+<section>
+  <span class="eyebrow">Visão geral</span>
+  <h2>Arquitetura</h2>
+  <p>Três camadas e um processo separado para a IA, tudo rodando na sua máquina por enquanto: front no Vite, API no Uvicorn e o banco num arquivo <code>.db</code>. Só a chamada ao Gemini sai para a internet. O front só fala com a API; a API é a única que toca o banco e a pasta de arquivos. A importação roda em segundo plano porque ler um arquivo grande e chamar a IA pode levar minutos.</p>
+  <div class="figure">
+<pre class="mermaid">
+flowchart LR
+  U([Usuário]) --> FE
+  subgraph FE[Front-end · React]
+    D[Dashboard] --- L[Lista + filtros]
+    L --- F[Ficha do objeto]
+    F --- C[Categorias e campos]
+    C --- I[Importar e revisar]
+  end
+  FE -- REST / JSON --> API
+  subgraph API[Back-end · FastAPI]
+    R[Rotas + validação Pydantic] --> S[Serviços de domínio]
+    S --> ORM[SQLAlchemy]
+    S --> P[Parsers: xlsx · csv · txt · WhatsApp · pdf]
+  end
+  ORM --> DB[(SQLite)]
+  S --> FS[/Pasta de uploads · arquivos importados/]
+  P --> W[Worker de importação]
+  W -- texto + esquema das categorias --> LLM[[Gemini API · plano gratuito]]
+  LLM -- JSON estruturado --> W
+  W -- itens para revisão --> DB
+</pre>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>Front-end</h3><ul><li>React + Vite + TypeScript</li><li>TanStack Query para cache das chamadas</li><li>TanStack Table para a grade com filtros, ordenação e colunas dinâmicas</li><li>Formulários gerados a partir dos campos da categoria</li></ul></div>
+    <div class="card"><h3>Back-end</h3><ul><li>FastAPI com esquemas Pydantic (validação de IP, patrimônio, campos obrigatórios)</li><li>SQLAlchemy + Alembic para migrações</li><li>BackgroundTasks no começo; fila (RQ/Celery) só se as importações crescerem</li><li>Relatórios em PDF gerados na API (WeasyPrint ou ReportLab)</li><li>Parsers: pandas/openpyxl (xlsx, csv), pdfplumber (pdf), texto puro (txt e WhatsApp)</li></ul></div>
+    <div class="card"><h3>IA · Gemini</h3><ul><li>SDK oficial do Google em Python, chave da API num arquivo <code>.env</code></li><li>Saída em JSON estruturado (o Gemini aceita um esquema de resposta), validada com Pydantic</li><li>Plano gratuito tem limite de requisições por minuto e por dia: o worker manda vários blocos por chamada e espera entre lotes</li><li>Trocar de provedor depois só mexe nesse módulo</li></ul></div>
+    <div class="card"><h3>Banco</h3><ul><li>SQLite em modo WAL (aguenta bem leituras simultâneas e poucos escritores)</li><li>Busca livre por patrimônio, nome e qualquer valor de campo (hostname, IP, serial)</li><li>Nada é apagado: arquivar e auditoria no lugar de DELETE</li></ul></div>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Fluxo 1</span>
+  <h2>Importar um arquivo com a IA</h2>
+  <p>O coração do projeto. A IA nunca grava direto no patrimônio: ela gera <em>sugestões</em> numa área de revisão, e uma pessoa aprova, corrige ou descarta. Planilhas já organizadas podem pular a IA e usar o mapeamento de colunas.</p>
+  <div class="figure">
+<pre class="mermaid">
+flowchart TD
+  A[Upload do arquivo] --> B{Formato}
+  B -- xlsx / csv organizado --> M[Mapear colunas → campos da categoria]
+  B -- txt · WhatsApp · pdf · planilha bagunçada --> T[Extrair texto e quebrar em blocos]
+  T --> IA[IA recebe blocos + campos e sinônimos de cada categoria]
+  IA --> J[JSON por objeto: categoria, campos, confiança]
+  M --> N
+  J --> N[Normalizar: IP, número de patrimônio, datas, nomes de local]
+  N --> X{Já existe? patrimônio · serial · IP}
+  X -- sim --> DU[Avisa como duplicado e ignora · o existente não muda]
+  X -- não --> NV[Marca como novo]
+  NV --> RV[Tela de revisão · sempre]
+  RV -- aprovar / editar / aprovar em lote --> OK[Cria objeto + valores + movimentação + auditoria]
+  RV -- rejeitar --> RJ[Item descartado, fica no histórico da importação]
+</pre>
+  </div>
+  <h3>Exemplo com uma mensagem real do grupo da DPDF</h3>
+  <div class="extract">
+<pre>DPDF – TJDFT SIG
+Pat: 4386
+Hostname: IMPSIGidos-4386
+Endereço IP: 10.223.20.238 - IP Fixo
+[3 fotos anexadas]</pre>
+    <div class="arrow" aria-hidden="true">→</div>
+<pre>{
+  "categoria": "impressora",
+  "patrimonio": "4386",
+  "local": "TJDFT SIG",
+  "campos": {
+    "hostname": "IMPSIGidos-4386",
+    "ip": "10.223.20.238",
+    "tipo_ip": "fixo"
+  },
+  "confianca": 0.97
+}</pre>
+  </div>
+  <p class="cap">O “sinônimo” de cada campo (ex.: <code>ip</code> ← “Endereço IP”, “IP”, “end. ip”) é o que ensina a IA e o mapeamento automático a reconhecer o dado em textos diferentes.</p>
+</section>
+
+<section>
+  <span class="eyebrow">Fluxo 2</span>
+  <h2>Vida de um objeto</h2>
+  <p>Cada mudança de status ou de posse gera um registro de histórico com observação. Quebrou: vai para “com defeito”; se não tiver conserto, é arquivado (baixa) com motivo e sai das listas padrão, mas continua consultável e restaurável.</p>
+  <div class="status">
+    <div class="st acc"><span class="dot"></span><b>Em estoque</b></div>
+    <div class="st ok"><span class="dot"></span><b>Em uso</b></div>
+    <div class="st warn"><span class="dot"></span><b>Em manutenção</b></div>
+    <div class="st bad"><span class="dot"></span><b>Com defeito</b></div>
+    <div class="st mut"><span class="dot"></span><b>Arquivado</b></div>
+  </div>
+  <div class="figure">
+<pre class="mermaid">
+stateDiagram-v2
+  direction LR
+  [*] --> Em_estoque: cadastro / importação
+  Em_estoque --> Em_uso: atribuir unidade (setor e pessoa opcionais)
+  Em_uso --> Em_uso: transferência
+  Em_uso --> Em_manutencao: enviado p/ manutenção
+  Em_manutencao --> Em_uso: consertado
+  Em_uso --> Com_defeito: quebrou
+  Com_defeito --> Em_manutencao: enviado p/ conserto
+  Com_defeito --> Arquivado: sem conserto (baixa)
+  Em_manutencao --> Arquivado: sem conserto (baixa)
+  Arquivado --> Em_estoque: restaurar
+</pre>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Telas</span>
+  <h2>O que existe no painel</h2>
+  <div class="grid2">
+    <div class="card"><h3>Dashboard</h3><ul><li>Totais por categoria, status e unidade</li><li>Pendências: com defeito, sem IP, sem responsável</li><li>Importações aguardando revisão</li><li>Últimas movimentações</li></ul></div>
+    <div class="card"><h3>Objetos (lista)</h3><ul><li>Busca livre (patrimônio, hostname, IP, serial)</li><li>Filtros fixos: categoria, status, unidade, setor, pessoa</li><li>Filtros dinâmicos com os campos “filtráveis” da categoria</li><li>Colunas configuráveis, exportar a lista filtrada em PDF</li></ul></div>
+    <div class="card"><h3>Ficha do objeto</h3><ul><li>Campos da categoria, editáveis</li><li>Posse atual: unidade › setor › pessoa</li><li>Abas: histórico, ligado a (vínculos), auditoria</li><li>Ações: transferir, mudar status, vincular, arquivar</li></ul></div>
+    <div class="card"><h3>Categorias</h3><ul><li>Criar categoria (Impressora, Telefone IP…)</li><li>Montar campos: tipo, obrigatório, único, filtrável, opções, sinônimos</li><li>Reordenar campos do formulário</li></ul></div>
+    <div class="card"><h3>Importar</h3><ul><li>Upload e escolha: mapeamento ou IA</li><li>Revisão lado a lado: trecho original × objeto sugerido</li><li>Aprovar em lote os de alta confiança</li></ul></div>
+    <div class="card"><h3>Cadastros de apoio</h3><ul><li>Unidades (Defensorias) e seus setores</li><li>Pessoas (responsáveis)</li><li>Arquivados</li><li>Configurações: chave do Gemini, limite de confiança</li></ul></div>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Modelagem</span>
+  <h2>Banco de dados</h2>
+  <p>A peça central é o par <code>categoria → campo</code>: ele define quais características cada tipo de objeto tem. Os valores ficam em <code>ativo_valor</code>, uma linha por campo, com colunas tipadas (texto, número, data) para permitir filtros e índices de verdade, o que um JSON solto no SQLite dificulta.</p>
+  <div class="figure">
+<pre class="mermaid">
+erDiagram
+  CATEGORIA ||--o{ CAMPO : "define"
+  CATEGORIA ||--o{ ATIVO : "classifica"
+  ATIVO ||--o{ ATIVO_VALOR : "tem"
+  CAMPO ||--o{ ATIVO_VALOR : "preenche"
+  UNIDADE ||--o{ SETOR : "tem"
+  UNIDADE ||--o{ ATIVO : "posse (obrigatória)"
+  SETOR |o--o{ ATIVO : "posse (opcional)"
+  PESSOA |o--o{ ATIVO : "posse (opcional)"
+  SETOR |o--o{ PESSOA : "lotada em"
+  UNIDADE ||--o{ PESSOA : "trabalha em"
+  ATIVO ||--o{ MOVIMENTACAO : "histórico"
+  ATIVO ||--o{ VINCULO : "origem"
+  ATIVO ||--o{ VINCULO : "destino"
+  IMPORTACAO ||--o{ IMPORTACAO_ITEM : "gera"
+  IMPORTACAO_ITEM |o--o| ATIVO : "vira"
+  ATIVO ||--o{ AUDITORIA : "alterações"
+
+  CATEGORIA {
+    int id PK
+    text nome UK
+    text slug UK
+    text icone
+    text descricao
+    bool ativa
+  }
+  CAMPO {
+    int id PK
+    int categoria_id FK
+    text chave
+    text rotulo
+    text tipo "texto|numero|data|ip|mac|telefone|lista|bool"
+    bool obrigatorio
+    bool unico
+    bool filtravel
+    json opcoes
+    json sinonimos
+    int ordem
+  }
+  ATIVO {
+    int id PK
+    int categoria_id FK
+    text patrimonio UK "opcional"
+    text nome
+    text status
+    int unidade_id FK "obrigatório"
+    int setor_id FK "opcional"
+    int pessoa_id FK "opcional"
+    text observacao
+    text origem "manual|planilha|ia|regras"
+    datetime criado_em
+    datetime atualizado_em
+    datetime arquivado_em
+    text motivo_arquivo
+  }
+  ATIVO_VALOR {
+    int id PK
+    int ativo_id FK
+    int campo_id FK
+    text valor_texto
+    real valor_numero
+    date valor_data
+  }
+  UNIDADE {
+    int id PK
+    text nome UK "ex.: Fórum Gama, Sede SIA"
+    text sigla
+    text endereco
+    bool ativa
+  }
+  SETOR {
+    int id PK
+    int unidade_id FK
+    text nome
+    bool ativo
+  }
+  PESSOA {
+    int id PK
+    text nome
+    text matricula UK
+    int unidade_id FK
+    int setor_id FK
+    text email
+    text telefone
+    bool ativa
+  }
+  MOVIMENTACAO {
+    int id PK
+    int ativo_id FK
+    text tipo "cadastro|transferencia|status|arquivamento"
+    text status_anterior
+    text status_novo
+    int unidade_origem_id FK
+    int unidade_destino_id FK
+    int setor_origem_id FK
+    int setor_destino_id FK
+    int pessoa_origem_id FK
+    int pessoa_destino_id FK
+    datetime data
+    text observacao
+  }
+  VINCULO {
+    int id PK
+    int ativo_origem_id FK
+    int ativo_destino_id FK
+    text tipo "fila_impressao|ramal|monitor|outro"
+    text observacao
+    datetime criado_em
+  }
+  IMPORTACAO {
+    int id PK
+    text arquivo_nome
+    text arquivo_hash
+    text metodo "mapeamento|ia"
+    text status
+    int total_itens
+    datetime criado_em
+  }
+  IMPORTACAO_ITEM {
+    int id PK
+    int importacao_id FK
+    text trecho_original
+    int categoria_sugerida_id FK
+    json dados_extraidos
+    real confianca
+    text status "pendente|aprovado|rejeitado|duplicado"
+    text motivo_duplicado "patrimonio|serial|ip"
+    int ativo_id FK
+  }
+  AUDITORIA {
+    int id PK
+    text entidade
+    int entidade_id
+    text acao
+    json antes
+    json depois
+    datetime criado_em
+  }
+</pre>
+  </div>
+
+  <h3>Dicionário das tabelas principais</h3>
+  <div class="tables">
+    <details open>
+      <summary><b>categoria</b><span class="why">o “tipo” de objeto: Impressora, Telefone IP, Computador, Nobreak…</span></summary>
+      <div class="tscroll"><table>
+        <tr><th>Coluna</th><th>Tipo</th><th>Regra</th></tr>
+        <tr><td>nome<span class="k">UK</span></td><td>text</td><td>Único, ex.: “Impressora”</td></tr>
+        <tr><td>slug<span class="k">UK</span></td><td>text</td><td>Usado na URL e pela IA (<code>impressora</code>)</td></tr>
+        <tr><td>ativa</td><td>bool</td><td>Desativar esconde do cadastro, mas mantém os objetos</td></tr>
+      </table></div>
+    </details>
+    <details open>
+      <summary><b>campo</b><span class="why">as características de cada categoria; o formulário e os filtros saem daqui</span></summary>
+      <div class="tscroll"><table>
+        <tr><th>Coluna</th><th>Tipo</th><th>Regra</th></tr>
+        <tr><td>chave</td><td>text</td><td>Único dentro da categoria: <code>UNIQUE(categoria_id, chave)</code>, ex.: <code>ip</code>, <code>ramal</code>, <code>serial</code></td></tr>
+        <tr><td>tipo</td><td>text</td><td>Decide validação e componente: <code>ip</code> valida IPv4, <code>lista</code> usa <code>opcoes</code></td></tr>
+        <tr><td>obrigatorio</td><td>bool</td><td>As coisas “indispensáveis” da categoria</td></tr>
+        <tr><td>unico</td><td>bool</td><td>Ex.: IP não pode repetir entre impressoras ativas</td></tr>
+        <tr><td>filtravel</td><td>bool</td><td>Aparece como filtro na lista</td></tr>
+        <tr><td>sinonimos</td><td>json</td><td><code>["Endereço IP","IP","end ip"]</code>, usado pela IA e pelo mapeamento de colunas</td></tr>
+      </table></div>
+    </details>
+    <details>
+      <summary><b>ativo</b><span class="why">o objeto em si; só guarda o que toda categoria tem em comum</span></summary>
+      <div class="tscroll"><table>
+        <tr><th>Coluna</th><th>Tipo</th><th>Regra</th></tr>
+        <tr><td>patrimonio<span class="k">UK</span></td><td>text</td><td>Número da plaqueta (Pat). <b>Opcional</b>: pode ser digitado no cadastro, lido pela IA ou ficar vazio. Quando existe, não pode repetir (o SQLite aceita vários vazios numa coluna UNIQUE). Texto, porque pode ter zeros à esquerda ou letras</td></tr>
+        <tr><td>status</td><td>text</td><td><code>em_estoque | em_uso | em_manutencao | com_defeito | arquivado</code></td></tr>
+        <tr><td>unidade_id</td><td>FK</td><td><b>Obrigatório</b>: a Defensoria/unidade dona do objeto</td></tr>
+        <tr><td>setor_id / pessoa_id</td><td>FK</td><td><b>Opcionais</b>. O setor tem que ser da mesma unidade. O histórico de posse fica em <code>movimentacao</code></td></tr>
+        <tr><td>arquivado_em</td><td>datetime</td><td>Preenchido = arquivado. Listas padrão filtram <code>arquivado_em IS NULL</code></td></tr>
+        <tr><td>origem</td><td>text</td><td>Como entrou: manual, planilha ou IA</td></tr>
+      </table></div>
+    </details>
+    <details>
+      <summary><b>ativo_valor</b><span class="why">um valor por campo por objeto</span></summary>
+      <div class="tscroll"><table>
+        <tr><th>Coluna</th><th>Tipo</th><th>Regra</th></tr>
+        <tr><td>ativo_id + campo_id</td><td>FK</td><td><code>UNIQUE(ativo_id, campo_id)</code></td></tr>
+        <tr><td>valor_texto / valor_numero / valor_data</td><td>—</td><td>Só a coluna do tipo do campo é usada; índice em <code>(campo_id, valor_texto)</code> para filtrar e checar unicidade</td></tr>
+      </table></div>
+    </details>
+    <details>
+      <summary><b>unidade</b> · <b>setor</b> · <b>pessoa</b> · <b>movimentacao</b><span class="why">posse: Defensoria › setor › pessoa, agora e antes</span></summary>
+      <div class="tscroll"><table>
+        <tr><th>Tabela</th><th>Ponto-chave</th><th>Regra</th></tr>
+        <tr><td>unidade</td><td>nome</td><td>Cada Defensoria/núcleo: Sede (SIA), Ed. Rossi, Fórum Gama…</td></tr>
+        <tr><td>setor</td><td>unidade_id</td><td>Setores dentro de uma unidade (Protocolo, Gabinete, Cível…). <code>UNIQUE(unidade_id, nome)</code></td></tr>
+        <tr><td>pessoa</td><td>matricula</td><td>Responsável pelo objeto; setor opcional</td></tr>
+        <tr><td>movimentacao</td><td>origem → destino</td><td>Toda troca de unidade, setor, pessoa ou status (ex.: em uso → com defeito) grava uma linha com observação; nunca editada. Sem módulo de manutenção, é aqui que fica o motivo do defeito</td></tr>
+        <tr><td>vinculo</td><td>origem ↔ destino</td><td>Liga um objeto a outro: impressora ↔ fila, telefone ↔ ramal, computador ↔ monitor. <code>UNIQUE(ativo_origem_id, ativo_destino_id, tipo)</code>; aparece nas fichas dos dois lados</td></tr>
+      </table></div>
+    </details>
+    <details>
+      <summary><b>importacao</b> · <b>importacao_item</b><span class="why">a área de revisão da IA</span></summary>
+      <div class="tscroll"><table>
+        <tr><th>Coluna</th><th>Tipo</th><th>Regra</th></tr>
+        <tr><td>arquivo_hash</td><td>text</td><td>Avisa se o mesmo arquivo já foi importado</td></tr>
+        <tr><td>trecho_original</td><td>text</td><td>A linha ou bloco de onde a IA tirou o objeto, para a pessoa conferir</td></tr>
+        <tr><td>dados_extraidos</td><td>json</td><td>O JSON sugerido, editável na revisão antes de virar <code>ativo</code></td></tr>
+        <tr><td>confianca</td><td>real</td><td>0 a 1; permite aprovar em lote acima de um limite</td></tr>
+        <tr><td>ativo_id</td><td>FK</td><td>Objeto criado, ou o existente quando é duplicado (o existente nunca é alterado pela importação)</td></tr>
+      </table></div>
+    </details>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Decidido</span>
+  <h2>Decisões da v1</h2>
+  <p>Todas as perguntas foram respondidas e aplicadas no fluxo e no banco acima.</p>
+  <div class="qs">
+    <span class="group">Uso e acesso</span>
+    <div class="q done"><p>Quem vai usar o sistema e precisa de login com permissões diferentes?</p><p>Decidido: <b>sem login por enquanto</b>. A auditoria grava o que mudou e quando; a tabela de usuários pode entrar depois sem mexer no resto.</p></div>
+    <div class="q done"><p>Onde vai rodar: um servidor na rede interna, seu PC, ou na nuvem? Quantas pessoas ao mesmo tempo?</p><p>Decidido: <b>local, por enquanto</b>. Se for para um servidor com várias pessoas usando, revisitar login e talvez PostgreSQL.</p></div>
+    <span class="group">Objetos e posse</span>
+    <div class="q done"><p>Todo objeto tem número de patrimônio? Ele é único no sistema inteiro?</p><p>Decidido: <b>opcional</b>. Pode ser digitado no cadastro, lido pela IA ou ficar vazio; quando existe, é único.</p></div>
+    <div class="q done"><p>A posse é de uma pessoa, de um setor, ou dos dois?</p><p>Decidido: <b>unidade (Defensoria) obrigatória › setor opcional › pessoa opcional</b>.</p></div>
+    <div class="q done"><p>O local precisa de hierarquia (unidade › andar › sala) ou só a unidade basta?</p><p>Decidido junto com a posse: <b>unidade › setor</b>, sem andar ou sala.</p></div>
+    <div class="q done"><p>Objetos se ligam entre si? Ex.: impressora ↔ fila no servidor de impressão, telefone ↔ ramal, computador ↔ monitor.</p><p>Decidido: <b>sim, já na v1</b>, com a tabela <code>vinculo</code>.</p></div>
+    <span class="group">Quebrado e manutenção</span>
+    <div class="q done"><p>Quebrou: arquiva na hora, ou passa por “com defeito” e só arquiva quando confirmar que não tem conserto?</p><p>Decidido: <b>passa por “com defeito”</b>, e o arquivamento pede um motivo.</p></div>
+    <div class="q done"><p>Quer registrar manutenções, preventivas e troca de suprimento (toner)?</p><p>Decidido: <b>não</b>. Sem tabelas de ocorrência nem fotos; o motivo de cada mudança de status fica no histórico.</p></div>
+    <span class="group">Importação e IA</span>
+    <div class="q done"><p>Quais formatos de arquivo entram?</p><p>Decidido: <b>xlsx, csv, txt, exportação do WhatsApp e PDF</b>. Foto de etiqueta fica de fora.</p></div>
+    <div class="q done"><p>Qual IA, e os dados podem sair da rede (IPs internos, nomes de servidores)?</p><p>Decidido: <b>Gemini, plano gratuito</b>. Atenção: no plano gratuito o Google pode usar o conteúdo enviado para melhorar os produtos. Para testes tudo bem; antes de mandar planilhas reais da Defensoria, vale confirmar com a TI ou usar o plano pago.</p></div>
+    <div class="q done"><p>A revisão humana é sempre obrigatória, ou itens com confiança alta podem entrar direto?</p><p>Decidido: <b>sempre revisado</b>, com botão de aprovar em lote os de confiança alta.</p></div>
+    <div class="q done"><p>Quando a IA encontrar um objeto que já existe (mesmo patrimônio, serial ou IP), atualiza ou só avisa?</p><p>Decidido: <b>só avisa e ignora</b>. O item fica marcado como duplicado e o objeto existente não muda.</p></div>
+    <span class="group">Extras</span>
+    <div class="q done"><p>Precisa exportar relatórios ou gerar etiqueta com QR code?</p><p>Decidido: <b>exportar PDF</b>. Sem Excel e sem QR code na v1.</p></div>
+  </div>
+</section>
+
+</div>
+
+</body>
+</html>
