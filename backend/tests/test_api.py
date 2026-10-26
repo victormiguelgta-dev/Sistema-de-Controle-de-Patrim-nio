@@ -144,6 +144,8 @@ def test_dashboard(client, cat, unidade):
     d = client.get("/api/dashboard").json()
     assert d["total"] == 1 and d["por_status"]["em_uso"] == 1
     assert d["por_unidade"][0]["nome"] == "Fórum Gama"
+    serie = d["serie_mensal"]
+    assert len(serie) == 12 and serie[-1]["cadastros"] == 1 and serie[-1]["ativos"] == 1
 
 
 # ---------- importação ----------

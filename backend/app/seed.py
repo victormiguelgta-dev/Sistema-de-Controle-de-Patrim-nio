@@ -137,6 +137,63 @@ def criar_exemplos(db: Session) -> None:
     db.add(m.Vinculo(ativo_origem_id=criados["PC-UEC-GAB-01"].id,
                      ativo_destino_id=criados['Monitor 24"'].id, tipo="monitor"))
     db.flush()
+    _historico_exemplo(db, cats, [centro, norte], [protocolo, gabinete])
+
+
+def _historico_exemplo(db: Session, cats: dict, unidades: list, setores: list) -> None:
+    """Mais objetos fictícios espalhados pelos últimos 12 meses, para o painel ter série histórica."""
+    import random
+    from datetime import timedelta
+
+    rnd = random.Random(42)
+    sul = m.Unidade(nome="Unidade Exemplo Sul", sigla="UES")
+    db.add(sul)
+    db.flush()
+    unidades = [*unidades, sul]
+    hoje = m.agora()
+    modelos = {"impressora": ["M408", "C406", "X4300"], "computador": ["Desktop A", "Notebook B"],
+               "monitor": ["24 pol", "27 pol"], "telefone_ip": ["Modelo T1"]}
+    for i in range(48):
+        slug = rnd.choice(["impressora", "impressora", "computador", "computador", "monitor", "telefone_ip"])
+        uni = rnd.choice(unidades)
+        setor = rnd.choice(setores) if uni.id == setores[0].unidade_id and rnd.random() < 0.6 else None
+        valores: dict = {"modelo": rnd.choice(modelos[slug])}
+        if slug == "impressora":
+            valores |= {"ip": f"192.168.{40 + i // 200}.{10 + i}", "hostname": f"IMP-EX-{i:03d}", "tipo_ip": "Fixo"}
+        elif slug == "computador":
+            valores |= {"hostname": f"PC-EX-{i:03d}", "sistema": rnd.choice(["Windows 10", "Windows 11", "Linux"])}
+        elif slug == "telefone_ip":
+            valores |= {"ramal": str(5000 + i)}
+        a = svc.criar(db, AtivoCriar(categoria_id=cats[slug].id, patrimonio=str(9100 + i),
+                                     nome=valores.get("hostname") or f"{cats[slug].nome} {9100 + i}",
+                                     status="em_uso", unidade_id=uni.id, setor_id=setor.id if setor else None,
+                                     valores=valores, observacao="Dado de exemplo"))
+        quando = hoje - timedelta(days=rnd.randint(5, 360))
+        a.criado_em = quando
+        for mv in db.scalars(select(m.Movimentacao).where(m.Movimentacao.ativo_id == a.id)):
+            mv.data = quando
+        sorte = rnd.random()
+        if sorte < 0.2:
+            svc.mudar_status(db, a, "com_defeito", "Exemplo: não liga")
+            _datar_ultima(db, a, quando + timedelta(days=rnd.randint(1, max(1, (hoje - quando).days))))
+            if rnd.random() < 0.4:
+                svc.arquivar(db, a, "Exemplo: sem conserto")
+                _datar_ultima(db, a, min(hoje, quando + timedelta(days=rnd.randint(20, 60))))
+        elif sorte < 0.45:
+            destino = rnd.choice([u for u in unidades if u.id != a.unidade_id])
+            svc.transferir(db, a, destino.id, None, None, "Exemplo: remanejado")
+            _datar_ultima(db, a, quando + timedelta(days=rnd.randint(1, max(1, (hoje - quando).days))))
+        elif sorte < 0.55:
+            svc.mudar_status(db, a, "em_manutencao", "Exemplo: em conserto")
+    db.flush()
+
+
+def _datar_ultima(db: Session, ativo: m.Ativo, quando) -> None:
+    mv = db.scalar(select(m.Movimentacao).where(m.Movimentacao.ativo_id == ativo.id)
+                   .order_by(m.Movimentacao.id.desc()))
+    mv.data = quando
+    if ativo.arquivado_em:
+        ativo.arquivado_em = quando
 
 
 def main() -> None:

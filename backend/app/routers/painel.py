@@ -1,4 +1,6 @@
 """Dashboard e configurações."""
+from datetime import date
+
 from fastapi import APIRouter, Depends
 from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session, selectinload
@@ -9,6 +11,44 @@ from ..database import get_db
 from ..schemas import ConfigGeminiIn, ConfigOut, MovimentacaoOut
 
 router = APIRouter(tags=["painel"])
+
+MESES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
+
+
+def serie_mensal(db: Session, meses: int = 12) -> list[dict]:
+    """Movimentações por mês nos últimos `meses` meses e o total de objetos ativos no fim de cada mês."""
+    hoje = date.today()
+    chaves = []
+    ano, mes = hoje.year, hoje.month
+    for _ in range(meses):
+        chaves.append((ano, mes))
+        ano, mes = (ano, mes - 1) if mes > 1 else (ano - 1, 12)
+    chaves.reverse()
+    serie = {k: {"cadastros": 0, "transferencias": 0, "defeitos": 0, "arquivados": 0} for k in chaves}
+    saldo_antes = 0  # objetos ativos antes do primeiro mês da série
+    for tipo, status_novo, data in db.execute(select(m.Movimentacao.tipo, m.Movimentacao.status_novo, m.Movimentacao.data)):
+        k = (data.year, data.month)
+        delta = 1 if tipo in ("cadastro", "restauracao") else -1 if tipo == "arquivamento" else 0
+        if k < chaves[0]:
+            saldo_antes += delta
+            continue
+        if k not in serie:
+            continue
+        if tipo == "cadastro":
+            serie[k]["cadastros"] += 1
+        elif tipo == "transferencia":
+            serie[k]["transferencias"] += 1
+        elif tipo == "status" and status_novo == "com_defeito":
+            serie[k]["defeitos"] += 1
+        elif tipo == "arquivamento":
+            serie[k]["arquivados"] += 1
+        serie[k]["_delta"] = serie[k].get("_delta", 0) + delta
+    saida, saldo = [], saldo_antes
+    for (a, mm) in chaves:
+        d = serie[(a, mm)]
+        saldo += d.pop("_delta", 0)
+        saida.append({"mes": f"{a}-{mm:02d}", "rotulo": MESES[mm - 1], "ano": a, "ativos": saldo, **d})
+    return saida
 
 
 @router.get("/dashboard")
@@ -46,7 +86,7 @@ def dashboard(db: Session = Depends(get_db)):
                                *(selectinload(getattr(m.Movimentacao, r)) for r in (
                                    "unidade_origem", "unidade_destino", "setor_origem", "setor_destino",
                                    "pessoa_origem", "pessoa_destino")))
-                      .order_by(m.Movimentacao.id.desc()).limit(10)).all()
+                      .order_by(m.Movimentacao.data.desc(), m.Movimentacao.id.desc()).limit(10)).all()
     ultimas = []
     for mv in movs:
         d = MovimentacaoOut.model_validate(mv).model_dump()
@@ -64,6 +104,7 @@ def dashboard(db: Session = Depends(get_db)):
         "importacoes_abertas": importacoes_revisao,
         "sem_pessoa": sem_pessoa,
         "ultimas_movimentacoes": ultimas,
+        "serie_mensal": serie_mensal(db),
     }
 
 
