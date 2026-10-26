@@ -200,6 +200,19 @@ export interface Dashboard {
   importacoes_abertas: number;
   sem_pessoa: number;
   ultimas_movimentacoes: Movimentacao[];
+  serie_mensal: SerieMes[];
+}
+
+export interface SerieMes {
+  mes: string;
+  rotulo: string;
+  ano: number;
+  ativos: number;
+  cadastros: number;
+  transferencias: number;
+  defeitos: number;
+  arquivados: number;
+  [k: string]: string | number;
 }
 
 export interface Config { gemini_configurado: boolean; gemini_modelo: string; gemini_chave_mascarada: string | null }

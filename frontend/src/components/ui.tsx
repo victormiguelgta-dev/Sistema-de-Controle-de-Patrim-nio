@@ -65,7 +65,7 @@ export function StatusPill({ status }: { status: string }) {
 
 export function Patrimonio({ valor }: { valor: string | null }) {
   if (!valor) return <span className="muted">sem patrimônio</span>;
-  return <span className="etiqueta-pat"><span>PAT</span><span>{valor}</span></span>;
+  return <span className="etiqueta-pat"><span>Patrimônio</span><span>{valor}</span></span>;
 }
 
 export function Carregando() {

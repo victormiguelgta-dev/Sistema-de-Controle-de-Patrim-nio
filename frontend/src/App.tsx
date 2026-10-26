@@ -11,6 +11,9 @@ import Pessoas from "./pages/Pessoas";
 import Importar from "./pages/Importar";
 import ImportacaoRevisao from "./pages/ImportacaoRevisao";
 import Configuracoes from "./pages/Configuracoes";
+import {
+  IconeArquivo, IconeCategorias, IconeConfig, IconeImportar, IconeObjetos, IconePainel, IconePessoas, IconeUnidades,
+} from "./components/icones";
 
 export default function App() {
   const dash = useQuery({ queryKey: ["dashboard"], queryFn: () => api.get<DashboardT>("/dashboard") });
@@ -18,19 +21,19 @@ export default function App() {
   return (
     <div className="shell">
       <aside className="side">
-        <div className="marca"><span className="etq">PAT</span><b>Patrimônio</b></div>
+        <div className="marca"><span className="logo" aria-hidden>P</span><div><b>Patrimônio</b><small>controle de bens</small></div></div>
         <nav className="nav" aria-label="Principal">
-          <NavLink to="/" end>Painel</NavLink>
-          <NavLink to="/objetos">Objetos</NavLink>
-          <NavLink to="/importar">Importar{pendentes > 0 && <span className="badge" title="Itens aguardando revisão">{pendentes}</span>}</NavLink>
-          <NavLink to="/arquivados">Arquivados</NavLink>
+          <NavLink to="/" end><IconePainel />Painel</NavLink>
+          <NavLink to="/objetos"><IconeObjetos />Objetos</NavLink>
+          <NavLink to="/importar"><IconeImportar />Importar{pendentes > 0 && <span className="badge" title="Itens aguardando revisão">{pendentes}</span>}</NavLink>
+          <NavLink to="/arquivados"><IconeArquivo />Arquivados</NavLink>
           <span className="grupo">Cadastros</span>
-          <NavLink to="/categorias">Categorias</NavLink>
-          <NavLink to="/unidades">Unidades e setores</NavLink>
-          <NavLink to="/pessoas">Pessoas</NavLink>
-          <NavLink to="/configuracoes">Configurações</NavLink>
+          <NavLink to="/categorias"><IconeCategorias />Categorias</NavLink>
+          <NavLink to="/unidades"><IconeUnidades />Unidades e setores</NavLink>
+          <NavLink to="/pessoas"><IconePessoas />Pessoas</NavLink>
+          <NavLink to="/configuracoes"><IconeConfig />Configurações</NavLink>
         </nav>
-        <p className="rodape">Rodando localmente · sem login</p>
+        <p className="rodape">Uso local · sem login</p>
       </aside>
       <main className="main">
         <Routes>

@@ -146,7 +146,7 @@ export default function ObjetoFicha() {
                   <div className="topo">
                     <div>
                       <Link to={`/objetos/${v.outro.id}`}><b>{v.outro.nome || `Objeto #${v.outro.id}`}</b></Link>
-                      <span className="muted"> · {v.outro.categoria}{v.outro.patrimonio ? ` · PAT ${v.outro.patrimonio}` : ""}</span>
+                      <span className="muted"> · {v.outro.categoria}{v.outro.patrimonio ? ` · Pat. ${v.outro.patrimonio}` : ""}</span>
                       {v.observacao && <p className="muted">{v.observacao}</p>}
                     </div>
                     {!arquivado && (
@@ -302,7 +302,7 @@ function Vincular({ ativo, aoFechar, aoConcluir }: PropsAcao) {
           {resultados.data?.itens.filter((x) => x.id !== ativo.id).map((x) => (
             <label key={x.id} className="check" style={{ padding: "6px 0" }}>
               <input type="radio" name="vc-destino" checked={destino === x.id} onChange={() => setDestino(x.id)} />
-              <span><b>{x.nome || `Objeto #${x.id}`}</b> <span className="muted">· {x.categoria.nome}{x.patrimonio ? ` · PAT ${x.patrimonio}` : ""} · {x.unidade.nome}</span></span>
+              <span><b>{x.nome || `Objeto #${x.id}`}</b> <span className="muted">· {x.categoria.nome}{x.patrimonio ? ` · Pat. ${x.patrimonio}` : ""} · {x.unidade.nome}</span></span>
             </label>
           ))}
           {resultados.data && resultados.data.itens.length === 0 && <p className="muted">Nada encontrado.</p>}
