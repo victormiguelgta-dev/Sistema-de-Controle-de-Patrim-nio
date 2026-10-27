@@ -336,16 +336,26 @@ class AprovarLoteIn(BaseModel):
 
 
 class ConfigOut(BaseModel):
+    ia_provedor: Literal["ollama", "gemini"]
+    ia_pronta: bool
+    ia_problema: str | None
+    ollama_url: str
+    ollama_modelo: str
+    ollama_rodando: bool
+    ollama_modelos: list[str]
     gemini_configurado: bool
     gemini_modelo: str
     gemini_chave_mascarada: str | None
 
 
-class ConfigGeminiIn(BaseModel):
-    api_key: str | None = None
-    modelo: str | None = None
+class ConfigIAIn(BaseModel):
+    provedor: Literal["ollama", "gemini"] | None = None
+    ollama_url: str | None = None
+    ollama_modelo: str | None = None
+    gemini_api_key: str | None = None
+    gemini_modelo: str | None = None
 
-    @field_validator("api_key", "modelo")
+    @field_validator("ollama_url", "ollama_modelo", "gemini_api_key", "gemini_modelo")
     @classmethod
     def _strip(cls, v):
         return v.strip() if isinstance(v, str) else v

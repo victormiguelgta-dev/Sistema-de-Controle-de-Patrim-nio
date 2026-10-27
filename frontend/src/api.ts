@@ -178,6 +178,8 @@ export interface Importacao {
   meta: {
     aviso?: string;
     progresso?: string;
+    provedor?: "ollama" | "gemini";
+    modelo?: string;
     total_blocos?: number;
     colunas?: string[];
     sugestao?: Record<string, string | null>;
@@ -215,7 +217,19 @@ export interface SerieMes {
   [k: string]: string | number;
 }
 
-export interface Config { gemini_configurado: boolean; gemini_modelo: string; gemini_chave_mascarada: string | null }
+export interface Config {
+  ia_provedor: "ollama" | "gemini";
+  ia_pronta: boolean;
+  ia_problema: string | null;
+  ollama_url: string;
+  ollama_modelo: string;
+  ollama_rodando: boolean;
+  ollama_modelos: string[];
+  gemini_configurado: boolean;
+  gemini_modelo: string;
+  gemini_chave_mascarada: string | null;
+}
+export const PROVEDOR_ROTULO: Record<Config["ia_provedor"], string> = { ollama: "Ollama (local)", gemini: "Gemini" };
 
 // ---------- cliente ----------
 export class ErroApi extends Error {

@@ -3,12 +3,12 @@
 Painel para cadastrar, buscar e acompanhar equipamentos (impressoras, telefones IP, computadores,
 monitores…) com **categorias de campos configuráveis**, posse por **unidade › setor › pessoa**,
 histórico de movimentação, vínculos entre objetos, arquivamento de itens sem conserto e
-**importação de planilhas, PDFs, textos e conversas do WhatsApp** — com IA (Google Gemini), por
-regras ou por mapeamento de colunas. Nada entra no patrimônio sem revisão.
+**importação de planilhas, PDFs, textos e conversas do WhatsApp** — com IA (modelo local no Ollama ou
+Google Gemini), por regras ou por mapeamento de colunas. Nada entra no patrimônio sem revisão.
 
 - Arquitetura, fluxos e modelo do banco: [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md)
   (versão visual em [`docs/arquitetura.html`](docs/arquitetura.html))
-- Stack: React + Vite + TypeScript · Python + FastAPI + SQLAlchemy · SQLite · Gemini
+- Stack: React + Vite + TypeScript · Python + FastAPI + SQLAlchemy · SQLite · Ollama / Gemini
 
 ## Como rodar (local)
 
@@ -25,7 +25,7 @@ python -m venv .venv
 source .venv/bin/activate
 
 pip install -r requirements.txt
-cp .env.example .env          # opcional: a chave do Gemini também pode ser salva pela tela Configurações
+cp .env.example .env          # opcional: a IA também pode ser configurada pela tela Configurações
 python -m app.seed --exemplos # opcional: cria unidades e objetos FICTÍCIOS para conhecer o sistema
 uvicorn app.main:app --reload
 ```
@@ -53,7 +53,7 @@ Abra http://localhost:5173.
 
 | Método | Para quê | Sai do computador? |
 |---|---|---|
-| **IA (Gemini)** | Textos soltos, conversas do WhatsApp, PDFs, planilhas bagunçadas. Entende unidade, categoria e campos | Sim, o texto vai para o Gemini |
+| **IA** | Textos soltos, conversas do WhatsApp, PDFs, planilhas bagunçadas. Entende unidade, categoria e campos | Com Ollama, não. Com Gemini, sim |
 | **Regras** | Linhas no formato `Rótulo: valor` (ex.: `Pat: 4386`, `Endereço IP: 10.0.0.1`), usando os sinônimos dos campos | Não |
 | **Mapear colunas** | Planilhas organizadas (xlsx, csv): cada coluna vai para um campo | Não |
 
@@ -64,17 +64,31 @@ Todo item passa pela tela de revisão: dá para corrigir, aprovar um a um ou em 
 ou rejeitar. Objetos que já existem (mesmo patrimônio, serial ou IP) são marcados como **duplicados
 e ignorados** — o cadastro existente nunca é alterado por uma importação.
 
-### Chave do Gemini
+### IA: Ollama (local, padrão) ou Gemini
+
+A escolha fica em **Configurações**, que também mostra se a IA está pronta e o que falta.
+
+**Ollama — o modelo roda no seu computador, nada sai da máquina**
+
+1. Instale o Ollama: https://ollama.com/download (Windows, Mac ou Linux) e deixe ele aberto.
+2. Baixe o modelo (uma vez só, ~4,7 GB):
+   ```bash
+   ollama pull qwen2.5:7b
+   ```
+3. Em **Configurações**, clique em *Verificar de novo*. Pronto.
+
+Precisa de uns 8 GB de RAM livres. Com placa de vídeo (ou Mac M1+) fica rápido; só no processador,
+cada trecho de texto leva de segundos a alguns minutos. Computador fraco: use `qwen2.5:3b`.
+Ajustes no `backend/.env`: `OLLAMA_URL`, `OLLAMA_MODELO`, `OLLAMA_TIMEOUT_SEGUNDOS`, `OLLAMA_MAX_CHARS_POR_LOTE`.
+
+**Gemini — nuvem do Google**
 
 1. Crie uma chave gratuita em https://aistudio.google.com/apikey
-2. Cole em **Configurações** no sistema (ou em `GEMINI_API_KEY` no `backend/.env`)
+2. Em **Configurações**, escolha Gemini e cole a chave.
 
-O plano gratuito tem limite de requisições por minuto, então o sistema manda o texto em lotes e
-espera entre eles (`GEMINI_INTERVALO_SEGUNDOS`). O modelo padrão é `gemini-2.5-flash`; troque em
-Configurações se o Google lançar outro.
-
-> **Atenção:** no plano gratuito o Google pode usar o conteúdo enviado para melhorar os produtos.
-> Antes de enviar planilhas reais com IPs internos, confirme com a TI ou use o método **Regras**.
+O plano gratuito limita requisições por minuto (o sistema espera entre os lotes) e, pelos termos do
+Google, o conteúdo enviado pode ser usado para melhorar os produtos e lido por revisores.
+**Use o Gemini só com dados de teste.** Para planilhas reais, use o Ollama ou os métodos sem IA.
 
 ## Regras principais
 

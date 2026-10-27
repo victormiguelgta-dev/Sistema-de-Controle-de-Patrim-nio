@@ -50,7 +50,7 @@ export default function ImportacaoRevisao() {
           <Link to="/importar" className="muted">← Importações</Link>
           <h1>{imp.arquivo_nome}</h1>
           <p className="sub">
-            {{ ia: "IA (Gemini)", regras: "Regras", mapeamento: "Mapeamento de colunas" }[imp.metodo]} · {imp.formato} · {formatarData(imp.criado_em)}
+            {imp.metodo === "ia" ? `IA · ${imp.meta.provedor === "gemini" ? "Gemini" : "Ollama"}${imp.meta.modelo ? ` (${imp.meta.modelo})` : ""}` : { regras: "Regras", mapeamento: "Mapeamento de colunas" }[imp.metodo]} · {imp.formato} · {formatarData(imp.criado_em)}
           </p>
         </div>
         <StatusPill status={imp.status} />
@@ -60,9 +60,14 @@ export default function ImportacaoRevisao() {
 
       {imp.status === "processando" && (
         <section className="card vazio">
-          <h2>Lendo o arquivo com o Gemini…</h2>
+          <h2>Lendo o arquivo com {imp.meta.provedor === "gemini" ? "o Gemini" : "o modelo local"}…</h2>
           <p>{imp.meta.progresso ?? "Na fila"} · {imp.meta.total_blocos ?? "?"} trecho(s) de texto</p>
-          <p className="muted">O plano gratuito tem limite por minuto, então arquivos grandes demoram. Pode sair desta tela; o processamento continua.</p>
+          <p className="muted">
+            {imp.meta.provedor === "gemini"
+              ? "O plano gratuito tem limite por minuto, então arquivos grandes demoram."
+              : "O modelo roda neste computador; sem placa de vídeo, cada trecho pode levar alguns minutos."}{" "}
+            Pode sair desta tela; o processamento continua.
+          </p>
         </section>
       )}
 

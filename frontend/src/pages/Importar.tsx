@@ -1,11 +1,11 @@
 import { DragEvent, FormEvent, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, Config, formatarData, Importacao } from "../api";
+import { api, Config, formatarData, Importacao, PROVEDOR_ROTULO } from "../api";
 import { ErroBox, StatusPill, useCategorias, useUnidades } from "../components/ui";
 
 const METODOS = [
-  { id: "ia", titulo: "IA (Gemini)", texto: "Para textos soltos, conversas de WhatsApp, PDFs e planilhas bagunçadas. Entende unidade, categoria e campos." },
+  { id: "ia", titulo: "IA", texto: "Para textos soltos, conversas de WhatsApp, PDFs e planilhas bagunçadas. Entende unidade, categoria e campos." },
   { id: "regras", titulo: "Regras (sem IA)", texto: "Lê linhas “Rótulo: valor” usando os sinônimos dos campos. Nada sai do computador." },
   { id: "mapeamento", titulo: "Mapear colunas", texto: "Para planilhas organizadas (xlsx, csv): você liga cada coluna a um campo." },
 ] as const;
@@ -85,16 +85,21 @@ export default function Importar() {
               <label key={m.id} className={"metodo" + (metodo === m.id ? " sel" : "")} style={desabilitado ? { opacity: 0.5 } : undefined}>
                 <span className="check" style={{ color: "var(--fg)" }}>
                   <input type="radio" name="metodo" disabled={desabilitado} checked={metodo === m.id} onChange={() => setMetodo(m.id)} />
-                  <b>{m.titulo}</b>
+                  <b>{m.id === "ia" && config.data ? `IA · ${PROVEDOR_ROTULO[config.data.ia_provedor]}` : m.titulo}</b>
                 </span>
                 <span>{m.texto}</span>
               </label>
             );
           })}
         </div>
-        {metodo === "ia" && config.data && !config.data.gemini_configurado && (
-          <div className="aviso atencao">A chave do Gemini não está configurada. <Link to="/configuracoes">Configurar agora</Link> ou use o método Regras.</div>
-        )}
+        {metodo === "ia" && config.data && (config.data.ia_pronta ? (
+          <div className="aviso info">
+            Usando {PROVEDOR_ROTULO[config.data.ia_provedor]} · modelo {config.data.ia_provedor === "ollama" ? config.data.ollama_modelo : config.data.gemini_modelo}.
+            {config.data.ia_provedor === "ollama" ? " Nada sai deste computador." : " O texto do arquivo será enviado ao Google."}
+          </div>
+        ) : (
+          <div className="aviso atencao">{config.data.ia_problema} <Link to="/configuracoes">Abrir Configurações</Link></div>
+        ))}
 
         <div className="form-grid">
           <label className="campo" htmlFor="im-cat">

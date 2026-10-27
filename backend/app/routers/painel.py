@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session, selectinload
 from .. import models as m
 from ..config import salvar_env, settings
 from ..database import get_db
-from ..schemas import ConfigGeminiIn, ConfigOut, MovimentacaoOut
+from ..schemas import ConfigIAIn, ConfigOut, MovimentacaoOut
+from ..services.importacao import ia
 
 router = APIRouter(tags=["painel"])
 
@@ -116,20 +117,45 @@ def _mascarar(chave: str) -> str | None:
 
 @router.get("/config", response_model=ConfigOut)
 def ler_config():
-    return {"gemini_configurado": bool(settings.gemini_api_key), "gemini_modelo": settings.gemini_model,
-            "gemini_chave_mascarada": _mascarar(settings.gemini_api_key)}
+    status = ia.ollama_status()
+    try:
+        ia.verificar_pronto()
+        problema = None
+    except ia.ErroIA as e:
+        problema = str(e)
+    return {
+        "ia_provedor": settings.ia_provedor if settings.ia_provedor in ("ollama", "gemini") else "ollama",
+        "ia_pronta": problema is None,
+        "ia_problema": problema,
+        "ollama_url": settings.ollama_url,
+        "ollama_modelo": settings.ollama_modelo,
+        "ollama_rodando": status["rodando"],
+        "ollama_modelos": status["modelos"],
+        "gemini_configurado": bool(settings.gemini_api_key),
+        "gemini_modelo": settings.gemini_model,
+        "gemini_chave_mascarada": _mascarar(settings.gemini_api_key),
+    }
 
 
-@router.put("/config/gemini", response_model=ConfigOut)
-def salvar_config(dados: ConfigGeminiIn):
-    """Grava a chave no backend/.env (o sistema roda local)."""
-    novas = {}
-    if dados.api_key is not None:
-        settings.gemini_api_key = dados.api_key
-        novas["GEMINI_API_KEY"] = dados.api_key
-    if dados.modelo:
-        settings.gemini_model = dados.modelo
-        novas["GEMINI_MODEL"] = dados.modelo
+@router.put("/config/ia", response_model=ConfigOut)
+def salvar_config(dados: ConfigIAIn):
+    """Grava a escolha no backend/.env (o sistema roda local)."""
+    novas: dict[str, str] = {}
+    if dados.provedor:
+        settings.ia_provedor = dados.provedor
+        novas["IA_PROVEDOR"] = dados.provedor
+    if dados.ollama_url:
+        settings.ollama_url = dados.ollama_url.rstrip("/")
+        novas["OLLAMA_URL"] = settings.ollama_url
+    if dados.ollama_modelo:
+        settings.ollama_modelo = dados.ollama_modelo
+        novas["OLLAMA_MODELO"] = dados.ollama_modelo
+    if dados.gemini_api_key is not None:
+        settings.gemini_api_key = dados.gemini_api_key
+        novas["GEMINI_API_KEY"] = dados.gemini_api_key
+    if dados.gemini_modelo:
+        settings.gemini_model = dados.gemini_modelo
+        novas["GEMINI_MODEL"] = dados.gemini_modelo
     if novas:
         salvar_env(novas)
     return ler_config()

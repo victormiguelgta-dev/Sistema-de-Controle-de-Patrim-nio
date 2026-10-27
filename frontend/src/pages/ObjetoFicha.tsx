@@ -114,7 +114,7 @@ export default function ObjetoFicha() {
             <div className="dado"><dt>Unidade</dt><dd>{a.unidade.nome}</dd></div>
             <div className="dado"><dt>Setor</dt><dd>{a.setor?.nome ?? "—"}</dd></div>
             <div className="dado"><dt>Pessoa</dt><dd>{a.pessoa?.nome ?? "—"}</dd></div>
-            <div className="dado"><dt>Origem do cadastro</dt><dd>{{ manual: "Manual", planilha: "Planilha", ia: "IA (Gemini)", regras: "Importação por regras" }[a.origem] ?? a.origem}</dd></div>
+            <div className="dado"><dt>Origem do cadastro</dt><dd>{{ manual: "Manual", planilha: "Planilha", ia: "Importação com IA", regras: "Importação por regras" }[a.origem] ?? a.origem}</dd></div>
             <div className="dado"><dt>Cadastrado em</dt><dd className="num">{formatarData(a.criado_em)}</dd></div>
             <div className="dado"><dt>Atualizado em</dt><dd className="num">{formatarData(a.atualizado_em)}</dd></div>
           </dl>

@@ -258,14 +258,13 @@ def criar(db: Session, nome: str, conteudo: bytes, metodo: str,
             achados = mapeamento.extrair_por_regras(blocos, list(categorias), categoria)
             _criar_itens(db, imp, [(b.texto, b.origem, d, c) for b, d, c in achados])
             return imp, False
-        # ia: valida a leitura agora, chama o Gemini em segundo plano
+        # ia: valida a leitura e o provedor agora, chama o modelo em segundo plano
         blocos = parsers.ler_blocos(conteudo, formato)
         if not blocos:
             raise parsers.ErroArquivo("Não encontrei texto aproveitável no arquivo")
-        if not settings.gemini_api_key:
-            raise ia.ErroIA("Configure a chave do Gemini em Configurações antes de importar com IA, "
-                            "ou use o método “Regras”.")
-        _set_meta(imp, total_blocos=len(blocos), progresso="Na fila")
+        ia.verificar_pronto()
+        _set_meta(imp, total_blocos=len(blocos), progresso="Na fila", provedor=settings.ia_provedor,
+                  modelo=settings.gemini_model if settings.ia_provedor == "gemini" else settings.ollama_modelo)
         return imp, True
     except (parsers.ErroArquivo, ia.ErroIA) as e:
         imp.status = "erro"

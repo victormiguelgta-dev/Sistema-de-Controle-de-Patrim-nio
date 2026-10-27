@@ -21,6 +21,14 @@ class Settings:
         # Plano gratuito tem limite de requisições por minuto: espera entre lotes.
         self.gemini_intervalo = float(os.getenv("GEMINI_INTERVALO_SEGUNDOS", "6"))
         self.gemini_max_chars = int(os.getenv("GEMINI_MAX_CHARS_POR_LOTE", "12000"))
+        # Provedor da IA de importação: "ollama" (local, nada sai do computador) ou "gemini" (nuvem)
+        self.ia_provedor = os.getenv("IA_PROVEDOR", "ollama").strip().lower()
+        self.ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434").strip().rstrip("/")
+        self.ollama_modelo = os.getenv("OLLAMA_MODELO", "qwen2.5:7b").strip()
+        # Modelos locais têm contexto menor: lotes de texto menores.
+        self.ollama_max_chars = int(os.getenv("OLLAMA_MAX_CHARS_POR_LOTE", "5000"))
+        self.ollama_contexto = int(os.getenv("OLLAMA_CONTEXTO", "8192"))
+        self.ollama_timeout = float(os.getenv("OLLAMA_TIMEOUT_SEGUNDOS", "600"))
         self.max_upload_mb = int(os.getenv("MAX_UPLOAD_MB", "100"))
         self.cors_origins = [
             o.strip()
