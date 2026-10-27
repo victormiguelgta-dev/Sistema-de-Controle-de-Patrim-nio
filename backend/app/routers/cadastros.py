@@ -1,4 +1,4 @@
-"""Unidades (Defensorias), setores e pessoas."""
+"""Unidades, setores e pessoas."""
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError

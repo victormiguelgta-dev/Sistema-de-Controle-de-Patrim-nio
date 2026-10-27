@@ -3,7 +3,7 @@
 Painel para cadastrar, buscar e acompanhar equipamentos (impressoras, telefones, computadores…) com
 **categorias de campos configuráveis**, posse por **unidade › setor › pessoa**, histórico de
 movimentação, vínculos entre objetos, arquivamento de itens quebrados e **importação de planilhas e
-textos soltos com IA (Gemini)**, sempre com revisão humana.
+textos soltos com IA (Ollama local ou Gemini)**, sempre com revisão humana.
 
 > Versão visual desta página: [`docs/arquitetura.html`](arquitetura.html) (abra no navegador).
 
@@ -15,7 +15,7 @@ textos soltos com IA (Gemini)**, sempre com revisão humana.
 | Back-end | Python · FastAPI · SQLAlchemy · Pydantic |
 | Banco | SQLite (modo WAL) |
 | Importação | pandas/openpyxl (xlsx, csv), pdfplumber (pdf), texto puro (txt, WhatsApp) |
-| IA | Google Gemini (plano gratuito) via `google-genai`, saída em JSON validada |
+| IA | Ollama com modelo local (padrão: `qwen2.5:7b`) ou Google Gemini; saída em JSON validada |
 | Relatórios | PDF com ReportLab |
 | Execução | Local, sem login (v1) |
 
@@ -39,7 +39,7 @@ flowchart LR
   ORM --> DB[(SQLite)]
   S --> FS[/Pasta de uploads · arquivos importados/]
   P --> W[Worker de importação]
-  W -- texto + esquema das categorias --> LLM[[Gemini API · plano gratuito]]
+  W -- texto + esquema das categorias --> LLM[[IA: Ollama local ou Gemini]]
   LLM -- JSON estruturado --> W
   W -- itens para revisão --> DB
 ```
@@ -70,10 +70,10 @@ flowchart TD
 Exemplo real — mensagem de WhatsApp de uma visita técnica:
 
 ```text
-DPDF – TJDFT SIG
+UNIDADE – ANEXO NORTE
 Pat: 4386
-Hostname: IMPSIGidos-4386
-Endereço IP: 10.223.20.238 - IP Fixo
+Hostname: IMP-NORTE-4386
+Endereço IP: 192.168.20.38 - IP Fixo
 ```
 
 vira:
@@ -82,8 +82,8 @@ vira:
 {
   "categoria": "impressora",
   "patrimonio": "4386",
-  "unidade": "TJDFT SIG",
-  "campos": { "hostname": "IMPSIGidos-4386", "ip": "10.223.20.238" },
+  "unidade": "Anexo Norte",
+  "campos": { "hostname": "IMP-NORTE-4386", "ip": "192.168.20.38" },
   "confianca": 0.97
 }
 ```
@@ -184,7 +184,7 @@ erDiagram
   }
   UNIDADE {
     int id PK
-    text nome UK "ex.: Fórum Gama, Sede SIA"
+    text nome UK "ex.: Unidade Centro, Sede SIA"
     text sigla
     text endereco
     bool ativa
@@ -283,7 +283,7 @@ Nada é apagado: objetos são arquivados, e a auditoria guarda cada alteração.
 | Ficha do objeto | Campos da categoria, posse, histórico, vínculos, auditoria; transferir, mudar status, vincular, arquivar |
 | Categorias | Criar categoria e montar seus campos (tipo, obrigatório, único, filtrável, opções, sinônimos) |
 | Importar | Upload (xlsx, csv, txt, WhatsApp, pdf), escolha entre mapeamento de colunas e IA, revisão lado a lado |
-| Cadastros | Unidades e setores, pessoas, arquivados, configuração da chave do Gemini |
+| Cadastros | Unidades e setores, pessoas, arquivados, escolha da IA (Ollama ou Gemini) |
 
 ## Decisões da v1
 
@@ -297,7 +297,7 @@ Nada é apagado: objetos são arquivados, e a auditoria guarda cada alteração.
 | 6 | Quebrou | Passa por "com defeito"; arquiva com motivo quando não tem conserto |
 | 7 | Manutenções e fotos | Não registra |
 | 8 | Formatos | xlsx, csv, txt, WhatsApp, PDF |
-| 9 | IA | Gemini, plano gratuito |
+| 9 | IA | Duas opções em Configurações: Ollama (modelo local, padrão) ou Gemini (nuvem, só dados de teste) |
 | 10 | Revisão | Sempre revisada, com aprovação em lote |
 | 11 | Duplicado | Só avisa e ignora |
 | 12 | Exportação | PDF |

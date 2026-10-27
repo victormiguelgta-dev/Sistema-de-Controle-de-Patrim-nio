@@ -140,7 +140,7 @@ export function PosseSelect({ valor, onChange, erros = {}, prefixo = "posse" }: 
   return (
     <div className="form-grid">
       <label className="campo" htmlFor={`${prefixo}-unidade`}>
-        <span>Unidade (Defensoria) <span className="obrig">*</span></span>
+        <span>Unidade <span className="obrig">*</span></span>
         <select id={`${prefixo}-unidade`} className={erros.unidade_id ? "erro" : undefined} value={valor.unidade_id ?? ""}
           onChange={(e) => onChange({ unidade_id: e.target.value ? Number(e.target.value) : null, setor_id: null, pessoa_id: valor.pessoa_id })}>
           <option value="">Escolha…</option>

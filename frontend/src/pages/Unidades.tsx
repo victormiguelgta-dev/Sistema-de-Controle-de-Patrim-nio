@@ -29,7 +29,7 @@ export default function Unidades() {
   return (
     <>
       <div className="topo">
-        <div><h1>Unidades e setores</h1><p className="sub">Cada objeto pertence a uma unidade (Defensoria). Setor e pessoa são opcionais.</p></div>
+        <div><h1>Unidades e setores</h1><p className="sub">Cada objeto pertence a uma unidade. Setor e pessoa são opcionais.</p></div>
         <button className="primario" onClick={() => setEdit("nova")}>Nova unidade</button>
       </div>
       {data.length === 0 ? (
@@ -83,7 +83,7 @@ function UnidadeModal({ unidade, aoFechar, aoSalvar }: { unidade: Unidade | null
   return (
     <Modal titulo={unidade ? "Editar unidade" : "Nova unidade"} aoFechar={aoFechar}>
       <form className="form" onSubmit={submit}>
-        <label className="campo" htmlFor="un-nome"><span>Nome <span className="obrig">*</span></span><input id="un-nome" autoFocus value={nome} onChange={(e) => setNome(e.target.value)} placeholder="ex.: Fórum Gama" /></label>
+        <label className="campo" htmlFor="un-nome"><span>Nome <span className="obrig">*</span></span><input id="un-nome" autoFocus value={nome} onChange={(e) => setNome(e.target.value)} placeholder="ex.: Unidade Centro" /></label>
         <div className="form-grid">
           <label className="campo" htmlFor="un-sigla"><span>Sigla</span><input id="un-sigla" value={sigla} onChange={(e) => setSigla(e.target.value)} /></label>
           <label className="campo" htmlFor="un-end"><span>Endereço</span><input id="un-end" value={endereco} onChange={(e) => setEndereco(e.target.value)} /></label>

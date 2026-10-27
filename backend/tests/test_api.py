@@ -32,14 +32,14 @@ def test_criar_categoria_com_campos(client):
 # ---------- objetos ----------
 def test_criar_e_validar_objeto(client, cat, unidade):
     r = _impressora(client, cat, unidade, patrimonio="4386",
-                    valores={"hostname": "IMPSIGidos-4386", "ip": "10.223.20.238 - IP Fixo", "tipo_ip": "fixo"})
+                    valores={"hostname": "IMP-NORTE-4386", "ip": "192.168.20.38 - IP Fixo", "tipo_ip": "fixo"})
     assert r.status_code == 201, r.text
     a = r.json()
-    assert a["valores"]["ip"] == "10.223.20.238"
+    assert a["valores"]["ip"] == "192.168.20.38"
     assert a["valores"]["tipo_ip"] == "Fixo"
 
     # patrimônio repetido e IP único repetido
-    r = _impressora(client, cat, unidade, patrimonio="4386", valores={"ip": "10.223.20.238"})
+    r = _impressora(client, cat, unidade, patrimonio="4386", valores={"ip": "192.168.20.38"})
     assert r.status_code == 422
     erros = r.json()["detail"]["erros"]
     assert "patrimonio" in erros and "ip" in erros
@@ -143,25 +143,25 @@ def test_dashboard(client, cat, unidade):
     _impressora(client, cat, unidade)
     d = client.get("/api/dashboard").json()
     assert d["total"] == 1 and d["por_status"]["em_uso"] == 1
-    assert d["por_unidade"][0]["nome"] == "Fórum Gama"
+    assert d["por_unidade"][0]["nome"] == "Unidade Centro"
     serie = d["serie_mensal"]
     assert len(serie) == 12 and serie[-1]["cadastros"] == 1 and serie[-1]["ativos"] == 1
 
 
 # ---------- importação ----------
 WHATS = """[29/09/2026, 13:39:29] Leandro: boa tarde, estamos iniciando as preventivas na sede
-[29/09/2026, 15:09:25] ~ Victor: DPDF – SEDE
+[29/09/2026, 15:09:25] ~ Victor: UNIDADE – SEDE
 Pat: 3605
-Hostname: IMP-SEDEdie3605
-Endereço IP: 10.223.0.64 — IP Fixo <anexado: 00003159-PHOTO.jpg>
-[29/09/2026, 15:19:10] ~ Victor: DPDF – SEDE
+Hostname: IMP-SEDE-3605
+Endereço IP: 192.168.0.64 — IP Fixo <anexado: 00003159-PHOTO.jpg>
+[29/09/2026, 15:19:10] ~ Victor: UNIDADE – SEDE
 Pat: 8590
-Hostname: IMP-SEDEuni8590
-Endereço IP: 10.223.0.62 — IP Fixo
-[29/09/2026, 15:20:10] ~ Victor: DPDF – SEDE
+Hostname: IMP-SEDE-8590
+Endereço IP: 192.168.0.62 — IP Fixo
+[29/09/2026, 15:20:10] ~ Victor: UNIDADE – SEDE
 Pat: 8590
-Hostname: IMP-SEDEuni8590
-Endereço IP: 10.223.0.62 — IP Fixo
+Hostname: IMP-SEDE-8590
+Endereço IP: 192.168.0.62 — IP Fixo
 [29/09/2026, 15:30:00] Gustavo: ok
 """
 
@@ -179,7 +179,7 @@ def test_importar_whatsapp_por_regras(client, cat, unidade):
     assert len(d["itens"]) == 3
     primeiro = d["itens"][0]
     assert primeiro["dados_extraidos"]["patrimonio"] == "3605"
-    assert primeiro["dados_extraidos"]["campos"]["ip"].startswith("10.223.0.64")
+    assert primeiro["dados_extraidos"]["campos"]["ip"].startswith("192.168.0.64")
     assert primeiro["dados_extraidos"]["unidade_id"] == unidade["id"]
     assert d["itens"][2]["status"] == "duplicado"  # 8590 repetido no arquivo
 
@@ -188,8 +188,8 @@ def test_importar_whatsapp_por_regras(client, cat, unidade):
     d = client.get(f"/api/importacoes/{imp['id']}").json()
     assert d["status"] == "concluida"
     obj = client.get("/api/ativos", params={"q": "3605"}).json()["itens"][0]
-    assert obj["valores"]["ip"] == "10.223.0.64" and obj["origem"] == "regras" and obj["status"] == "em_uso"
-    assert obj["nome"] == "IMP-SEDEdie3605"  # sem nome no arquivo: usa o hostname
+    assert obj["valores"]["ip"] == "192.168.0.64" and obj["origem"] == "regras" and obj["status"] == "em_uso"
+    assert obj["nome"] == "IMP-SEDE-3605"  # sem nome no arquivo: usa o hostname
 
     # mesmo arquivo de novo: aviso e tudo duplicado
     r = _upload(client, "conversa.txt", WHATS.encode(), metodo="regras", unidade_padrao_id=str(unidade["id"]))
@@ -209,9 +209,9 @@ def test_importar_zip_whatsapp(client, cat, unidade):
 
 def test_importar_planilha_com_mapeamento(client, cat, unidade):
     csv = ("Relação de impressoras\n\nPatrimônio;Unidade;Endereço IP;Hostname;Serial\n"
-           "4440;TJDFT SIG;10.223.21.132;IMPSIGrec1-4440;088WB07K813DSMN\n"
-           "4387;TJDFT SIG;10.223.20.168;IMPSIGcivi-4387;\n"
-           "4389;Fórum Gama;999.1.1.1;IMPGAM;\n").encode("utf-8")
+           "4440;Anexo Norte;192.168.21.32;IMP-NORTE-4440;SERIALEX0001\n"
+           "4387;Anexo Norte;192.168.20.68;IMP-NORTE-4387;\n"
+           "4389;Unidade Centro;999.1.1.1;IMP-CENTRO;\n").encode("utf-8")
     r = _upload(client, "imps.csv", csv, metodo="mapeamento", categoria_id=str(cat["impressora"]["id"]))
     assert r.status_code == 201, r.text
     imp = r.json()
@@ -223,15 +223,15 @@ def test_importar_planilha_com_mapeamento(client, cat, unidade):
     assert d["status"] == "revisao" and len(d["itens"]) == 3
     it1, it2, it3 = d["itens"]
     assert any("será criada" in msg["texto"] for msg in it1["mensagens"])
-    assert it3["dados_extraidos"]["unidade_id"] == unidade["id"]  # casou “Fórum Gama”
+    assert it3["dados_extraidos"]["unidade_id"] == unidade["id"]  # casou “Unidade Centro”
     assert any(msg["tipo"] == "erro" for msg in it3["mensagens"])  # IP inválido
 
     assert client.post(f"/api/importacoes/{imp['id']}/itens/{it1['id']}/aprovar").status_code == 200
-    assert any(u["nome"] == "TJDFT SIG" for u in client.get("/api/unidades").json())
+    assert any(u["nome"] == "Anexo Norte" for u in client.get("/api/unidades").json())
     r = client.post(f"/api/importacoes/{imp['id']}/itens/{it3['id']}/aprovar")
     assert r.status_code == 422
     # corrige e aprova
-    dados = it3["dados_extraidos"] | {"campos": {"ip": "10.223.32.9", "hostname": "IMPGAM"}}
+    dados = it3["dados_extraidos"] | {"campos": {"ip": "192.168.32.9", "hostname": "IMP-CENTRO"}}
     r = client.put(f"/api/importacoes/{imp['id']}/itens/{it3['id']}", json={"dados": dados})
     assert r.status_code == 200 and not any(x["tipo"] == "erro" for x in r.json()["mensagens"])
     assert client.post(f"/api/importacoes/{imp['id']}/itens/{it3['id']}/aprovar").status_code == 200
@@ -241,14 +241,15 @@ def test_importar_planilha_com_mapeamento(client, cat, unidade):
 
 def test_importar_ia_com_gemini_simulado(client, cat, unidade, monkeypatch):
     from app.config import settings
+    settings.ia_provedor = "gemini"
     settings.gemini_api_key = "teste"
 
     def falso(prompt):
         assert "impressora" in prompt and "BLOCO 1" in prompt
         return ia.RespostaIA(objetos=[ia.ObjetoExtraido(
-            blocos=[1], categoria="impressora", patrimonio="3605", nome="IMP-SEDEdie3605", unidade="Fórum Gama",
+            blocos=[1], categoria="impressora", patrimonio="3605", nome="IMP-SEDE-3605", unidade="Unidade Centro",
             setor="", pessoa="", observacao="", confianca=0.95,
-            campos=[ia.CampoExtraido(chave="ip", valor="10.223.0.64"),
+            campos=[ia.CampoExtraido(chave="ip", valor="192.168.0.64"),
                     ia.CampoExtraido(chave="inexistente", valor="x")])])
 
     monkeypatch.setattr(ia, "_chamar_gemini", falso)
@@ -258,13 +259,89 @@ def test_importar_ia_com_gemini_simulado(client, cat, unidade, monkeypatch):
     assert d["status"] == "revisao", d
     item = d["itens"][0]
     assert item["dados_extraidos"]["unidade_id"] == unidade["id"]
-    assert item["dados_extraidos"]["campos"] == {"ip": "10.223.0.64"}
+    assert item["dados_extraidos"]["campos"] == {"ip": "192.168.0.64"}
     assert client.post(f"/api/importacoes/{d['id']}/itens/{item['id']}/aprovar").status_code == 200
 
 
-def test_ia_sem_chave(client):
+def test_gemini_sem_chave(client):
+    from app.config import settings
+    settings.ia_provedor = "gemini"
     r = _upload(client, "conversa.txt", WHATS.encode(), metodo="ia")
-    assert r.json()["status"] == "erro" and "Gemini" in r.json()["erro"]
+    assert r.json()["status"] == "erro" and "chave do Gemini" in r.json()["erro"]
+
+
+def test_ollama_desligado(client):
+    r = _upload(client, "conversa.txt", WHATS.encode(), metodo="ia")
+    assert r.json()["status"] == "erro" and "Ollama não está rodando" in r.json()["erro"]
+
+
+class _Resp:
+    def __init__(self, dados, status=200):
+        self._dados, self.status_code = dados, status
+
+    def json(self):
+        return self._dados
+
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            raise RuntimeError(f"HTTP {self.status_code}")
+
+
+def _ollama_falso(monkeypatch, modelos=("qwen2.5:7b",), resposta=None):
+    chamadas = []
+
+    def get(url, timeout=None):
+        assert url.endswith("/api/tags")
+        return _Resp({"models": [{"name": n} for n in modelos]})
+
+    def post(url, json=None, timeout=None):
+        chamadas.append(json)
+        return _Resp({"message": {"content": __import__("json").dumps(resposta)}})
+
+    monkeypatch.setattr(ia.httpx, "get", get)
+    monkeypatch.setattr(ia.httpx, "post", post)
+    return chamadas
+
+
+def test_ollama_modelo_nao_baixado(client, monkeypatch):
+    _ollama_falso(monkeypatch, modelos=("llama3.1:8b",))
+    r = _upload(client, "conversa.txt", WHATS.encode(), metodo="ia")
+    assert r.json()["status"] == "erro" and "ollama pull qwen2.5:7b" in r.json()["erro"]
+
+
+def test_importar_ia_com_ollama_simulado(client, cat, unidade, monkeypatch):
+    resposta = {"objetos": [{
+        "blocos": [1], "categoria": "impressora", "patrimonio": "3605", "nome": "", "unidade": "Unidade Centro",
+        "setor": "", "pessoa": "", "observacao": "", "confianca": 0.9,
+        "campos": [{"chave": "ip", "valor": "192.168.0.64"}, {"chave": "hostname", "valor": "IMP-SEDE-3605"}]}]}
+    chamadas = _ollama_falso(monkeypatch, resposta=resposta)
+    r = _upload(client, "conversa.txt", WHATS.encode(), metodo="ia")
+    assert r.status_code == 201, r.text
+    d = client.get(f"/api/importacoes/{r.json()['id']}").json()
+    assert d["status"] == "revisao", d
+    assert d["meta"]["provedor"] == "ollama" and d["meta"]["modelo"] == "qwen2.5:7b"
+    corpo = chamadas[0]
+    assert corpo["model"] == "qwen2.5:7b" and corpo["stream"] is False
+    assert "$ref" not in str(corpo["format"]) and corpo["format"]["type"] == "object"
+    item = d["itens"][0]
+    assert item["dados_extraidos"]["campos"] == {"ip": "192.168.0.64", "hostname": "IMP-SEDE-3605"}
+    assert client.post(f"/api/importacoes/{d['id']}/itens/{item['id']}/aprovar").status_code == 200
+    obj = client.get("/api/ativos", params={"q": "3605"}).json()["itens"][0]
+    assert obj["origem"] == "ia" and obj["nome"] == "IMP-SEDE-3605"
+
+
+def test_config_ia(client, monkeypatch):
+    from app.routers import painel
+    gravado = {}
+    monkeypatch.setattr(painel, "salvar_env", lambda d: gravado.update(d))
+    c = client.get("/api/config").json()
+    assert c["ia_provedor"] == "ollama" and c["ollama_rodando"] is False and c["ia_pronta"] is False
+    _ollama_falso(monkeypatch, modelos=("qwen2.5:7b", "llama3.1:8b"))
+    c = client.put("/api/config/ia", json={"ollama_modelo": "llama3.1:8b"}).json()
+    assert c["ia_pronta"] is True and c["ollama_modelos"] == ["llama3.1:8b", "qwen2.5:7b"]
+    c = client.put("/api/config/ia", json={"provedor": "gemini"}).json()
+    assert c["ia_provedor"] == "gemini" and c["ia_pronta"] is False
+    assert gravado == {"OLLAMA_MODELO": "llama3.1:8b", "IA_PROVEDOR": "gemini"}
 
 
 def test_formato_invalido(client):

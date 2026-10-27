@@ -115,7 +115,7 @@ td:nth-child(2){font-family:var(--f-mono);color:var(--muted);white-space:nowrap}
   <h1>Sistema de Controle de Patrimônio</h1>
   <p class="lede">Painel para cadastrar, buscar e acompanhar equipamentos (impressoras, telefones, computadores…) com categorias de campos configuráveis, posse por pessoa e local, histórico de movimentação, arquivamento de itens quebrados e importação de planilhas e textos soltos com uma IA que transforma cada trecho num objeto organizado.</p>
   <div class="stack">
-    <span class="chip">React + Vite</span><span class="chip">Python · FastAPI</span><span class="chip">SQLAlchemy + Alembic</span><span class="chip">SQLite</span><span class="chip">pandas / openpyxl</span><span class="chip">Gemini API (gratuito)</span><span class="chip">Roda local · sem login</span>
+    <span class="chip">React + Vite</span><span class="chip">Python · FastAPI</span><span class="chip">SQLAlchemy + Alembic</span><span class="chip">SQLite</span><span class="chip">pandas / openpyxl</span><span class="chip">Ollama (IA local) ou Gemini</span><span class="chip">Roda local · sem login</span>
   </div>
 </header>
 
@@ -142,7 +142,7 @@ flowchart LR
   ORM --> DB[(SQLite)]
   S --> FS[/Pasta de uploads · arquivos importados/]
   P --> W[Worker de importação]
-  W -- texto + esquema das categorias --> LLM[[Gemini API · plano gratuito]]
+  W -- texto + esquema das categorias --> LLM[[IA: Ollama local ou Gemini]]
   LLM -- JSON estruturado --> W
   W -- itens para revisão --> DB
 </pre>
@@ -177,21 +177,21 @@ flowchart TD
   RV -- rejeitar --> RJ[Item descartado, fica no histórico da importação]
 </pre>
   </div>
-  <h3>Exemplo com uma mensagem real do grupo da DPDF</h3>
+  <h3>Exemplo com uma mensagem de WhatsApp de visita técnica</h3>
   <div class="extract">
-<pre>DPDF – TJDFT SIG
+<pre>UNIDADE – ANEXO NORTE
 Pat: 4386
-Hostname: IMPSIGidos-4386
-Endereço IP: 10.223.20.238 - IP Fixo
+Hostname: IMP-NORTE-4386
+Endereço IP: 192.168.20.38 - IP Fixo
 [3 fotos anexadas]</pre>
     <div class="arrow" aria-hidden="true">→</div>
 <pre>{
   "categoria": "impressora",
   "patrimonio": "4386",
-  "local": "TJDFT SIG",
+  "local": "Anexo Norte",
   "campos": {
-    "hostname": "IMPSIGidos-4386",
-    "ip": "10.223.20.238",
+    "hostname": "IMP-NORTE-4386",
+    "ip": "192.168.20.38",
     "tipo_ip": "fixo"
   },
   "confianca": 0.97
@@ -238,7 +238,7 @@ stateDiagram-v2
     <div class="card"><h3>Ficha do objeto</h3><ul><li>Campos da categoria, editáveis</li><li>Posse atual: unidade › setor › pessoa</li><li>Abas: histórico, ligado a (vínculos), auditoria</li><li>Ações: transferir, mudar status, vincular, arquivar</li></ul></div>
     <div class="card"><h3>Categorias</h3><ul><li>Criar categoria (Impressora, Telefone IP…)</li><li>Montar campos: tipo, obrigatório, único, filtrável, opções, sinônimos</li><li>Reordenar campos do formulário</li></ul></div>
     <div class="card"><h3>Importar</h3><ul><li>Upload e escolha: mapeamento ou IA</li><li>Revisão lado a lado: trecho original × objeto sugerido</li><li>Aprovar em lote os de alta confiança</li></ul></div>
-    <div class="card"><h3>Cadastros de apoio</h3><ul><li>Unidades (Defensorias) e seus setores</li><li>Pessoas (responsáveis)</li><li>Arquivados</li><li>Configurações: chave do Gemini, limite de confiança</li></ul></div>
+    <div class="card"><h3>Cadastros de apoio</h3><ul><li>Unidades e seus setores</li><li>Pessoas (responsáveis)</li><li>Arquivados</li><li>Configurações: chave do Gemini, limite de confiança</li></ul></div>
   </div>
 </section>
 
@@ -313,7 +313,7 @@ erDiagram
   }
   UNIDADE {
     int id PK
-    text nome UK "ex.: Fórum Gama, Sede SIA"
+    text nome UK "ex.: Unidade Centro, Sede SIA"
     text sigla
     text endereco
     bool ativa
@@ -418,7 +418,7 @@ erDiagram
         <tr><th>Coluna</th><th>Tipo</th><th>Regra</th></tr>
         <tr><td>patrimonio<span class="k">UK</span></td><td>text</td><td>Número da plaqueta (Pat). <b>Opcional</b>: pode ser digitado no cadastro, lido pela IA ou ficar vazio. Quando existe, não pode repetir (o SQLite aceita vários vazios numa coluna UNIQUE). Texto, porque pode ter zeros à esquerda ou letras</td></tr>
         <tr><td>status</td><td>text</td><td><code>em_estoque | em_uso | em_manutencao | com_defeito | arquivado</code></td></tr>
-        <tr><td>unidade_id</td><td>FK</td><td><b>Obrigatório</b>: a Defensoria/unidade dona do objeto</td></tr>
+        <tr><td>unidade_id</td><td>FK</td><td><b>Obrigatório</b>: a unidade dona do objeto</td></tr>
         <tr><td>setor_id / pessoa_id</td><td>FK</td><td><b>Opcionais</b>. O setor tem que ser da mesma unidade. O histórico de posse fica em <code>movimentacao</code></td></tr>
         <tr><td>arquivado_em</td><td>datetime</td><td>Preenchido = arquivado. Listas padrão filtram <code>arquivado_em IS NULL</code></td></tr>
         <tr><td>origem</td><td>text</td><td>Como entrou: manual, planilha ou IA</td></tr>
@@ -433,10 +433,10 @@ erDiagram
       </table></div>
     </details>
     <details>
-      <summary><b>unidade</b> · <b>setor</b> · <b>pessoa</b> · <b>movimentacao</b><span class="why">posse: Defensoria › setor › pessoa, agora e antes</span></summary>
+      <summary><b>unidade</b> · <b>setor</b> · <b>pessoa</b> · <b>movimentacao</b><span class="why">posse: unidade › setor › pessoa, agora e antes</span></summary>
       <div class="tscroll"><table>
         <tr><th>Tabela</th><th>Ponto-chave</th><th>Regra</th></tr>
-        <tr><td>unidade</td><td>nome</td><td>Cada Defensoria/núcleo: Sede (SIA), Ed. Rossi, Fórum Gama…</td></tr>
+        <tr><td>unidade</td><td>nome</td><td>Cada unidade/prédio: Sede, Anexo Norte, Unidade Centro…</td></tr>
         <tr><td>setor</td><td>unidade_id</td><td>Setores dentro de uma unidade (Protocolo, Gabinete, Cível…). <code>UNIQUE(unidade_id, nome)</code></td></tr>
         <tr><td>pessoa</td><td>matricula</td><td>Responsável pelo objeto; setor opcional</td></tr>
         <tr><td>movimentacao</td><td>origem → destino</td><td>Toda troca de unidade, setor, pessoa ou status (ex.: em uso → com defeito) grava uma linha com observação; nunca editada. Sem módulo de manutenção, é aqui que fica o motivo do defeito</td></tr>
@@ -467,7 +467,7 @@ erDiagram
     <div class="q done"><p>Onde vai rodar: um servidor na rede interna, seu PC, ou na nuvem? Quantas pessoas ao mesmo tempo?</p><p>Decidido: <b>local, por enquanto</b>. Se for para um servidor com várias pessoas usando, revisitar login e talvez PostgreSQL.</p></div>
     <span class="group">Objetos e posse</span>
     <div class="q done"><p>Todo objeto tem número de patrimônio? Ele é único no sistema inteiro?</p><p>Decidido: <b>opcional</b>. Pode ser digitado no cadastro, lido pela IA ou ficar vazio; quando existe, é único.</p></div>
-    <div class="q done"><p>A posse é de uma pessoa, de um setor, ou dos dois?</p><p>Decidido: <b>unidade (Defensoria) obrigatória › setor opcional › pessoa opcional</b>.</p></div>
+    <div class="q done"><p>A posse é de uma pessoa, de um setor, ou dos dois?</p><p>Decidido: <b>unidade obrigatória › setor opcional › pessoa opcional</b>.</p></div>
     <div class="q done"><p>O local precisa de hierarquia (unidade › andar › sala) ou só a unidade basta?</p><p>Decidido junto com a posse: <b>unidade › setor</b>, sem andar ou sala.</p></div>
     <div class="q done"><p>Objetos se ligam entre si? Ex.: impressora ↔ fila no servidor de impressão, telefone ↔ ramal, computador ↔ monitor.</p><p>Decidido: <b>sim, já na v1</b>, com a tabela <code>vinculo</code>.</p></div>
     <span class="group">Quebrado e manutenção</span>
@@ -475,7 +475,7 @@ erDiagram
     <div class="q done"><p>Quer registrar manutenções, preventivas e troca de suprimento (toner)?</p><p>Decidido: <b>não</b>. Sem tabelas de ocorrência nem fotos; o motivo de cada mudança de status fica no histórico.</p></div>
     <span class="group">Importação e IA</span>
     <div class="q done"><p>Quais formatos de arquivo entram?</p><p>Decidido: <b>xlsx, csv, txt, exportação do WhatsApp e PDF</b>. Foto de etiqueta fica de fora.</p></div>
-    <div class="q done"><p>Qual IA, e os dados podem sair da rede (IPs internos, nomes de servidores)?</p><p>Decidido: <b>Gemini, plano gratuito</b>. Atenção: no plano gratuito o Google pode usar o conteúdo enviado para melhorar os produtos. Para testes tudo bem; antes de mandar planilhas reais da Defensoria, vale confirmar com a TI ou usar o plano pago.</p></div>
+    <div class="q done"><p>Qual IA, e os dados podem sair da rede (IPs internos, nomes de servidores)?</p><p>Decidido: <b>duas opções, escolhidas em Configurações</b>. Padrão: <b>Ollama</b>, modelo local (qwen2.5:7b), nada sai do computador. Alternativa: <b>Gemini</b> na nuvem, só para dados de teste, porque no plano gratuito o Google pode usar o conteúdo enviado.</p></div>
     <div class="q done"><p>A revisão humana é sempre obrigatória, ou itens com confiança alta podem entrar direto?</p><p>Decidido: <b>sempre revisado</b>, com botão de aprovar em lote os de confiança alta.</p></div>
     <div class="q done"><p>Quando a IA encontrar um objeto que já existe (mesmo patrimônio, serial ou IP), atualiza ou só avisa?</p><p>Decidido: <b>só avisa e ignora</b>. O item fica marcado como duplicado e o objeto existente não muda.</p></div>
     <span class="group">Extras</span>
